@@ -1,0 +1,41 @@
+{
+  "templates": [
+    {
+      "title": "button",
+      "type": "component",
+      "path": "../templates/components.js",
+      "name": "button",
+      "description": "Reusable button component with variants",
+      "placeholders": ["COMPONENT_NAME"],
+      "dependencies": ["react"]
+    },
+    {
+      "title": "use-auth",
+      "name": "useAuth",
+      "type": "hook",
+      "path": "../templates/hooks.js",
+      "description": "Authentication hook with login/logout functionality",
+      "placeholders": ["HOOK_NAME"],
+      "dependencies": ["react"]
+    },
+    {
+      "title": "use-local-storage",
+      "type": "hook",
+      "name": "useLocalStorage",
+      "path": "../templates/hooks.js",
+      "description": "Hook for managing local storage with automatic JSON parsing",
+      "placeholders": ["HOOK_NAME"],
+      "dependencies": ["react"]
+    },
+    {
+      "title": "cn",
+      "type": "util",
+      "path": "../templates/utils.js",
+      "description": "Utility function for merging CSS class names",
+      "name": "cn",
+      "dependencies": ["clsx", "tailwind-merge"]
+    }
+  ],
+  "version": "1.0.0",
+  "lastUpdated": "2025-07-23T04:31:24.804Z"
+}
