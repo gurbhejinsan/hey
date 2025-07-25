@@ -23,7 +23,7 @@ function displayBanner(): void {
   console.log(
     chalk.blue.bold(`
  ┌─────────────────────────────────────┐
- │           MyCLI v${CLI_VERSION}             │
+ │           shadkit v${CLI_VERSION}             │
  │   Manage Reusable Code Templates    │
  └─────────────────────────────────────┘
   `),
@@ -53,7 +53,7 @@ process.on("uncaughtException", (error) => {
  */
 async function main(): Promise<void> {
   const argv = await yargs(hideBin(process.argv))
-    .scriptName("mycli")
+    .scriptName("shadkit")
     .version(CLI_VERSION)
     .usage("$0 <command> [options]")
     .help("help")
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     .wrap(Math.min(120, process.stdout.columns || 80))
     .command(
       "init [name]",
-      "Initialize a new mycli project",
+      "Initialize a new shadkit project",
       (yargs) => {
         return yargs
           .positional("name", {

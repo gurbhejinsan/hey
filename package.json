@@ -1,11 +1,11 @@
 {
-  "name": "@dev.gurbhej/hey",
+  "name": "shadkit",
   "version": "1.0.2",
   "description": "CLI tool to bootstrap and manage reusable code for projects",
   "main": "dist/main.js",
   "type": "module",
   "bin": {
-    "hey": "./dist/main.js"
+    "shadkit": "./dist/main.js"
   },
   "scripts": {
     "build": "tsc",
