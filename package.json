@@ -1,6 +1,6 @@
 {
   "name": "mycli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI tool to bootstrap and manage reusable code for projects",
   "main": "dist/main.js",
   "type": "module",
@@ -19,6 +19,9 @@
     "bootstrap",
     "code-management"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "",
   "license": "MIT",
   "dependencies": {
