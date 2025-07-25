@@ -1,6 +1,6 @@
 {
   "name": "shadkit",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CLI tool to bootstrap and manage reusable code for projects",
   "main": "dist/main.js",
   "type": "module",
