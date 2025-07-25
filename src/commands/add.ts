@@ -153,6 +153,7 @@ export async function addCommand(options: AddOptions): Promise<void> {
 
     // Find the requested template
     const template = Templates.findTemplate(registry, options.template);
+    console.log("🚀 ~ addCommand ~ template:", template)
     if (!template) {
       const availableTemplates = registry.templates
         .map((t) => t.title)
@@ -196,7 +197,6 @@ export async function addCommand(options: AddOptions): Promise<void> {
 
     // Ensure target directory exists
     await fs.ensureDir(targetDir);
-    console.log("🚀 ~ addCommand ~ targetPath:", targetPath);
 
     // Write the template file
     await fs.writeFile(targetPath, processedContent, "utf8");
@@ -265,7 +265,6 @@ export async function addCommand(options: AddOptions): Promise<void> {
 //       exportNames.add(match[1]);
 //     }
 
-//     console.log("🚀 ~ exportNames:", exportNames.entries());
 
 //     // b) export { symbol1, symbol2 }
 //     const groupExportRegex = /export\s*{([^}]+)}/g;
@@ -291,10 +290,6 @@ export async function addCommand(options: AddOptions): Promise<void> {
 //       let importLine = "";
 
 //       if (defaultExportMatch && exportNames.size === 1) {
-//         console.log(
-//           "🚀 ~ defaultExportMatch && exportNames.size === 1: IN CON",
-//           defaultExportMatch && exportNames.size === 1
-//         );
 //         importLine = `import ${template.name} from '${importPath}';`;
 //       } else {
 //         importLine = `import { ${[...exportNames].join(", ")} } from '${importPath}';`;

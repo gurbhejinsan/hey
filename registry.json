@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json-schema.org/draft-04/schema#",
   "templates": [
     {
       "title": "button",
@@ -38,4 +39,5 @@
   ],
   "version": "1.0.0",
   "lastUpdated": "2025-07-23T04:31:24.804Z"
+   
 }

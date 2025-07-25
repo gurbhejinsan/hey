@@ -11,7 +11,7 @@ import { fileURLToPath } from "url";
  */
 
 export const CONFIG_FILE = "myproject.config.json";
-export const REGISTRY_FILE = ".mycli.registry.json";
+export const REGISTRY_FILE = "registry.json";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,8 +82,9 @@ export class ConfigFiles {
     try {
       const REGISTRY_FILE_PATH = path.resolve(
         __dirname,
-        "../../.mycli.registry.json"
+        "../"+REGISTRY_FILE
       );
+      console.log("🚀 ~ ConfigFiles ~ readTemplateRegistry ~ REGISTRY_FILE_PATH:", REGISTRY_FILE_PATH)
       if (!(await fs.pathExists(REGISTRY_FILE_PATH))) {
         return null;
       }
@@ -156,7 +157,6 @@ export class Templates {
   /**
    * Get the appropriate file extension based on template type
    */
-  
 
   /**
    * Convert template name to proper component name (PascalCase)
