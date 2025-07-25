@@ -154,7 +154,7 @@ export async function runPrettier() {
     try {
         Logger.info("Running Prettier to format code...");
         await execa("npx", ["prettier", "--write", "."], {
-            stdio: "inherit",
+            stdio: "pipe",
         });
         Logger.success("Code formatted successfully");
     }

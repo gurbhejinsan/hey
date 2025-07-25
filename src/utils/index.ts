@@ -184,7 +184,7 @@ export async function runPrettier(): Promise<void> {
   try {
     Logger.info("Running Prettier to format code...");
     await execa("npx", ["prettier", "--write", "."], {
-      stdio: "inherit",
+      stdio: "pipe",
     });
     Logger.success("Code formatted successfully");
   } catch (error) {

@@ -26,125 +26,42 @@ export const implementationInIndex = async (
       throw new Error(`Generated file not found: ${generatedFilePath}`);
     }
 
+    if (isProvider) {
+      providerWrapper({
+        templateName: template.name,
+        generatedFilePath,
+        importPath,
+        indexPath,
+      });
+      return;
+    }
+
     // 2️⃣ Read contents
     let indexContent = await fs.readFile(indexPath, "utf8");
-    const content = await fs.readFile(generatedFilePath, "utf8");
 
-    // 3️⃣ Extract all exported symbols from the file
-    const exportNames = new Set<string>();
-
-    // a) export const/let/var/function/class Something
-    const namedExportRegex =
-      /export\s+(?:const|let|var|function|class)\s+(\w+)/g;
-    let match;
-    while ((match = namedExportRegex.exec(content)) !== null) {
-      exportNames.add(match[1]);
-    }
-
-    // b) export { symbol1, symbol2 }
-    const groupExportRegex = /export\s*{([^}]+)}/g;
-    while ((match = groupExportRegex.exec(content)) !== null) {
-      const parts = match[1].split(",").map((p) => p.trim());
-      parts.forEach((p) => p && exportNames.add(p));
-    }
-
-    // c) export default Something
-    const defaultExportMatch = content.match(/export\s+default\s+(\w+)/);
-    if (defaultExportMatch) {
-      exportNames.add(template.name); // use name as an alias
-    }
+    const { defaultExportMatch, exportNames } = await exportContent(
+      template.name,
+      generatedFilePath
+    );
 
     if (exportNames.size === 0) {
       console.warn(`⚠️ No exports found in ${generatedFilePath}`);
       return;
     }
-
     // 4️⃣ Add import statement if not already present
     const importRegex = new RegExp(`from ['"]${importPath}['"]`);
     if (!importRegex.test(indexContent)) {
       let importLine = "";
 
       if (defaultExportMatch && exportNames.size === 1) {
-        importLine = `import ${template.name} from '${importPath}';`;
+        importLine = `export  {deafult as ${template.name}  }from '${importPath}';`;
       } else {
-        importLine = `import { ${[...exportNames].join(", ")} } from '${importPath}';`;
+        importLine = `export  { ${[...exportNames].join(", ")} } from '${importPath}';`;
       }
 
       indexContent = `${importLine}\n${indexContent}`;
     }
 
-    if (isProvider) {
-
-
-      // 1️⃣ Try block JSX: return ( <div>{children}</div> );
-      let match = indexContent.match(/return\s*\(\s*([\s\S]+?)\s*\);/m);
-
-      if (match) {
-        const originalJSX = match[1].trim();
-        if (!originalJSX.includes(`<${template.name}>`)) {
-          const wrapped = `<${template.name}>\n  ${originalJSX}\n</${template.name}>`;
-          indexContent = indexContent.replace(
-            match[0],
-            `return (\n  ${wrapped}\n);`
-          );
-        }
-      } else {
-        // 2️⃣ Try inline JSX: return <div>{children}</div>;
-        match = indexContent.match(/return\s+<([\s\S]+?)>;/m);
-
-        if (match) {
-          const jsx = match[0]; // full line like: return <div>{children}</div>;
-          const inner = jsx
-            .replace(/return\s+/, "")
-            .replace(/;$/, "")
-            .trim();
-          if (!inner.includes(`<${template.name}>`)) {
-            const wrapped = `<${template.name}>\n  ${inner}\n</${template.name}>`;
-            indexContent = indexContent.replace(
-              jsx,
-              `return (\n  ${wrapped}\n);`
-            );
-          }
-        } else {
-          console.warn("⚠️ No recognizable return JSX found to wrap.");
-        }
-      }
-
-      await fs.writeFile(indexPath, indexContent, "utf8");
-      console.log(`✅ Wrapped Provider with ${template.name}`);
-      return;
-    }
-
- 
-    const exportBlockRegex = /export\s+default\s*{([\s\S]*?)}/m;
-
-    if (exportBlockRegex.test(indexContent)) {
-      indexContent = indexContent.replace(exportBlockRegex, (match, inner) => {
-        const existing = new Set(
-          inner
-            .split(",")
-            .map((s: string) => s.trim().replace(/\n|\/\*.*\*\/|\/\/.*/g, ""))
-            .filter(Boolean)
-        );
-
-        const newExports = [...exportNames].filter(
-          (name) => !existing.has(name)
-        );
-        let updatedBlock = inner.trim();
-
-        if (updatedBlock && !updatedBlock.endsWith(",")) {
-          updatedBlock += ",";
-        }
-
-        updatedBlock += `\n  ${newExports.join(",\n  ")}`;
-
-        return `export default {\n  ${updatedBlock}\n};`;
-      });
-    } else {
-      indexContent += `\nexport default {\n  ${[...exportNames].join(",\n  ")}\n};`;
-    }
-
-    // 6️⃣ Save
     await fs.writeFile(indexPath, indexContent, "utf8");
     console.log(`✅ Index updated with exports from ${template.name}.ts`);
   } catch (err) {
@@ -153,5 +70,106 @@ export const implementationInIndex = async (
   }
 };
 
+const exportContent = async (name: string, generatedFilePath: string) => {
+  const content = await fs.readFile(generatedFilePath, "utf8");
 
+  const exportNames = new Set<string>();
 
+  // a) export const/let/var/function/class Something
+  const namedExportRegex = /export\s+(?:const|let|var|function|class)\s+(\w+)/g;
+  let match;
+  while ((match = namedExportRegex.exec(content)) !== null) {
+    exportNames.add(match[1]);
+  }
+
+  // b) export { symbol1, symbol2 }
+  const groupExportRegex = /export\s*{([^}]+)}/g;
+  while ((match = groupExportRegex.exec(content)) !== null) {
+    const parts = match[1].split(",").map((p) => p.trim());
+    parts.forEach((p) => p && exportNames.add(p));
+  }
+
+  // c) export default Something
+  const defaultExportMatch = content.match(/export\s+default\s+(\w+)/);
+  if (defaultExportMatch) {
+    exportNames.add(name); // use name as an alias
+  }
+
+  return { exportNames, defaultExportMatch };
+};
+
+/**
+ * JSX wrapper for provider
+ */
+type ProviderTempleplate = {
+  templateName: Template["name"];
+  indexPath: string;
+  generatedFilePath: string;
+  importPath: string;
+};
+const providerWrapper = async ({
+  generatedFilePath,
+  importPath,
+  indexPath,
+  templateName,
+}: ProviderTempleplate) => {
+  let indexContent = await fs.readFile(indexPath, "utf8");
+  const { defaultExportMatch, exportNames } = await exportContent(
+    templateName,
+    generatedFilePath
+  );
+
+  if (exportNames.size === 0) {
+    console.warn(`⚠️ No exports found in ${generatedFilePath}`);
+    return;
+  }
+
+  // 4️⃣ Add import statement if not already present
+  const importRegex = new RegExp(`from ['"]${importPath}['"]`);
+  if (!importRegex.test(indexContent)) {
+    let importLine = "";
+
+    if (defaultExportMatch && exportNames.size === 1) {
+      importLine = `import ${templateName} from '${importPath}';`;
+    } else {
+      importLine = `import { ${[...exportNames].join(", ")} } from '${importPath}';`;
+    }
+
+    indexContent = `${importLine}\n${indexContent}`;
+  }
+
+  // 1️⃣ Try block JSX: return ( <div>{children}</div> );
+  let jsxMatch = indexContent.match(/return\s*\(\s*([\s\S]+?)\s*\);/m);
+
+  if (jsxMatch) {
+    const originalJSX = jsxMatch[1].trim();
+    if (!originalJSX.includes(`<${templateName}>`)) {
+      const wrapped = `<${templateName}>\n  ${originalJSX}\n</${templateName}>`;
+      indexContent = indexContent.replace(
+        jsxMatch[0],
+        `return (\n  ${wrapped}\n);`
+      );
+    }
+  } else {
+    // 2️⃣ Try inline JSX: return <div>{children}</div>;
+    jsxMatch = indexContent.match(/return\s+<([\s\S]+?)>;/m);
+
+    if (jsxMatch) {
+      const jsx = jsxMatch[0]; // full line like: return <div>{children}</div>;
+      const inner = jsx
+        .replace(/return\s+/, "")
+        .replace(/;$/, "")
+        .trim();
+      if (!inner.includes(`<${templateName}>`)) {
+        const wrapped = `<${templateName}>\n  ${inner}\n</${templateName}>`;
+        indexContent = indexContent.replace(jsx, `return (\n  ${wrapped}\n);`);
+      }
+    } else {
+      console.warn("⚠️ No recognizable return JSX found to wrap.");
+    }
+  }
+
+  await fs.writeFile(indexPath, indexContent, "utf8");
+  console.log(`✅ Wrapped Provider with ${templateName}`);
+  return;
+};
