@@ -1,5 +1,5 @@
 {
-  "name": "mycli",
+  "name": "@dev.gurbhej/hey",
   "version": "1.0.1",
   "description": "CLI tool to bootstrap and manage reusable code for projects",
   "main": "dist/main.js",
