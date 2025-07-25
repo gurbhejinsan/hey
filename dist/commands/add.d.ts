@@ -4,7 +4,6 @@ export declare function readTemplateFile(template: Template): Promise<string | n
  * Main add command handler
  */
 export declare function addCommand(options: AddOptions): Promise<void>;
-export declare const implementationInIndex: (template: Template, targetDir: string) => Promise<void>;
 /**
  * List all available templates
  */

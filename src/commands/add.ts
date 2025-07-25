@@ -10,6 +10,7 @@ import {
 } from "../utils/index.js";
 import { Logger } from "../utils/logger.js";
 import { fileURLToPath } from "url";
+import { implementationInIndex } from "../utils/generateIndex.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,7 +45,7 @@ function getTargetDirectory(template: Template, config: any): string {
 function generateFilename(template: Template, customName?: string): string {
   const baseName = customName || template.title;
 
-  if (template.type === "component") {
+  if (["component", "provider"].includes(template.type)) {
     // return `${Templates.toComponentName(baseName)}${extension}`;
     return `${template.title}.tsx`;
   } else if (template.type === "hook") {
@@ -227,118 +228,118 @@ export async function addCommand(options: AddOptions): Promise<void> {
   }
 }
 
-export const implementationInIndex = async (
-  template: Template,
-  targetDir: string // e.g., './src/hooks'
-) => {
-  try {
-    const indexPath = path.join(targetDir, "index.ts");
-    const generatedFilePath = path.join(
-      targetDir,
-      `${template.title}${template.type == "component" ? ".tsx" : ".ts"}`
-    ); // <- where file is written
-    const importPath = `./${template.title}`; // for import statement
+// export const implementationInIndex = async (
+//   template: Template,
+//   targetDir: string // e.g., './src/hooks'
+// ) => {
+//   try {
+//     const indexPath = path.join(targetDir, "index.ts");
+//     const generatedFilePath = path.join(
+//       targetDir,
+//       `${template.title}${template.type == "component" ? ".tsx" : ".ts"}`
+//     ); // <- where file is written
+//     const importPath = `./${template.title}`; // for import statement
 
-    // 1️⃣ Check files exist
-    if (!(await fs.pathExists(indexPath))) {
-      // throw new Error(`Index file not found: ${indexPath}`);
-      await fs.writeFile(indexPath, "");
-    }
+//     // 1️⃣ Check files exist
+//     if (!(await fs.pathExists(indexPath))) {
+//       // throw new Error(`Index file not found: ${indexPath}`);
+//       await fs.writeFile(indexPath, "");
+//     }
 
-    if (!(await fs.pathExists(generatedFilePath))) {
-      throw new Error(`Generated file not found: ${generatedFilePath}`);
-    }
+//     if (!(await fs.pathExists(generatedFilePath))) {
+//       throw new Error(`Generated file not found: ${generatedFilePath}`);
+//     }
 
-    // 2️⃣ Read contents
-    let indexContent = await fs.readFile(indexPath, "utf8");
-    const content = await fs.readFile(generatedFilePath, "utf8");
+//     // 2️⃣ Read contents
+//     let indexContent = await fs.readFile(indexPath, "utf8");
+//     const content = await fs.readFile(generatedFilePath, "utf8");
 
-    // 3️⃣ Extract all exported symbols from the file
-    const exportNames = new Set<string>();
+//     // 3️⃣ Extract all exported symbols from the file
+//     const exportNames = new Set<string>();
 
-    // a) export const/let/var/function/class Something
-    const namedExportRegex =
-      /export\s+(?:const|let|var|function|class)\s+(\w+)/g;
-    let match;
-    while ((match = namedExportRegex.exec(content)) !== null) {
-      exportNames.add(match[1]);
-    }
+//     // a) export const/let/var/function/class Something
+//     const namedExportRegex =
+//       /export\s+(?:const|let|var|function|class)\s+(\w+)/g;
+//     let match;
+//     while ((match = namedExportRegex.exec(content)) !== null) {
+//       exportNames.add(match[1]);
+//     }
 
-    console.log("🚀 ~ exportNames:", exportNames.entries());
+//     console.log("🚀 ~ exportNames:", exportNames.entries());
 
-    // b) export { symbol1, symbol2 }
-    const groupExportRegex = /export\s*{([^}]+)}/g;
-    while ((match = groupExportRegex.exec(content)) !== null) {
-      const parts = match[1].split(",").map((p) => p.trim());
-      parts.forEach((p) => p && exportNames.add(p));
-    }
+//     // b) export { symbol1, symbol2 }
+//     const groupExportRegex = /export\s*{([^}]+)}/g;
+//     while ((match = groupExportRegex.exec(content)) !== null) {
+//       const parts = match[1].split(",").map((p) => p.trim());
+//       parts.forEach((p) => p && exportNames.add(p));
+//     }
 
-    // c) export default Something
-    const defaultExportMatch = content.match(/export\s+default\s+(\w+)/);
-    if (defaultExportMatch) {
-      exportNames.add(template.name); // use name as an alias
-    }
+//     // c) export default Something
+//     const defaultExportMatch = content.match(/export\s+default\s+(\w+)/);
+//     if (defaultExportMatch) {
+//       exportNames.add(template.name); // use name as an alias
+//     }
 
-    if (exportNames.size === 0) {
-      console.warn(`⚠️ No exports found in ${generatedFilePath}`);
-      return;
-    }
+//     if (exportNames.size === 0) {
+//       console.warn(`⚠️ No exports found in ${generatedFilePath}`);
+//       return;
+//     }
 
-    // 4️⃣ Add import statement if not already present
-    const importRegex = new RegExp(`from ['"]${importPath}['"]`);
-    if (!importRegex.test(indexContent)) {
-      let importLine = "";
+//     // 4️⃣ Add import statement if not already present
+//     const importRegex = new RegExp(`from ['"]${importPath}['"]`);
+//     if (!importRegex.test(indexContent)) {
+//       let importLine = "";
 
-      if (defaultExportMatch && exportNames.size === 1) {
-        console.log(
-          "🚀 ~ defaultExportMatch && exportNames.size === 1: IN CON",
-          defaultExportMatch && exportNames.size === 1
-        );
-        importLine = `import ${template.name} from '${importPath}';`;
-      } else {
-        importLine = `import { ${[...exportNames].join(", ")} } from '${importPath}';`;
-      }
+//       if (defaultExportMatch && exportNames.size === 1) {
+//         console.log(
+//           "🚀 ~ defaultExportMatch && exportNames.size === 1: IN CON",
+//           defaultExportMatch && exportNames.size === 1
+//         );
+//         importLine = `import ${template.name} from '${importPath}';`;
+//       } else {
+//         importLine = `import { ${[...exportNames].join(", ")} } from '${importPath}';`;
+//       }
 
-      indexContent = `${importLine}\n${indexContent}`;
-    }
+//       indexContent = `${importLine}\n${indexContent}`;
+//     }
 
-    // 5️⃣ Inject into export default { ... }
-    const exportBlockRegex = /export\s+default\s*{([\s\S]*?)}/m;
+//     // 5️⃣ Inject into export default { ... }
+//     const exportBlockRegex = /export\s+default\s*{([\s\S]*?)}/m;
 
-    if (exportBlockRegex.test(indexContent)) {
-      indexContent = indexContent.replace(exportBlockRegex, (match, inner) => {
-        const existing = new Set(
-          inner
-            .split(",")
-            .map((s: string) => s.trim().replace(/\n|\/\*.*\*\/|\/\/.*/g, ""))
-            .filter(Boolean)
-        );
+//     if (exportBlockRegex.test(indexContent)) {
+//       indexContent = indexContent.replace(exportBlockRegex, (match, inner) => {
+//         const existing = new Set(
+//           inner
+//             .split(",")
+//             .map((s: string) => s.trim().replace(/\n|\/\*.*\*\/|\/\/.*/g, ""))
+//             .filter(Boolean)
+//         );
 
-        const newExports = [...exportNames].filter(
-          (name) => !existing.has(name)
-        );
-        let updatedBlock = inner.trim();
+//         const newExports = [...exportNames].filter(
+//           (name) => !existing.has(name)
+//         );
+//         let updatedBlock = inner.trim();
 
-        if (updatedBlock && !updatedBlock.endsWith(",")) {
-          updatedBlock += ",";
-        }
+//         if (updatedBlock && !updatedBlock.endsWith(",")) {
+//           updatedBlock += ",";
+//         }
 
-        updatedBlock += `\n  ${newExports.join(",\n  ")}`;
+//         updatedBlock += `\n  ${newExports.join(",\n  ")}`;
 
-        return `export default {\n  ${updatedBlock}\n};`;
-      });
-    } else {
-      indexContent += `\nexport default {\n  ${[...exportNames].join(",\n  ")}\n};`;
-    }
+//         return `export default {\n  ${updatedBlock}\n};`;
+//       });
+//     } else {
+//       indexContent += `\nexport default {\n  ${[...exportNames].join(",\n  ")}\n};`;
+//     }
 
-    // 6️⃣ Save
-    await fs.writeFile(indexPath, indexContent, "utf8");
-    console.log(`✅ Index updated with exports from ${template.name}.ts`);
-  } catch (err) {
-    console.error("❌ implementationInIndex Error:", err);
-    throw err;
-  }
-};
+//     // 6️⃣ Save
+//     await fs.writeFile(indexPath, indexContent, "utf8");
+//     console.log(`✅ Index updated with exports from ${template.name}.ts`);
+//   } catch (err) {
+//     console.error("❌ implementationInIndex Error:", err);
+//     throw err;
+//   }
+// };
 
 /**
  * List all available templates
